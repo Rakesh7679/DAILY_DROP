@@ -506,9 +506,14 @@ export const sendDeliveryOtp = async (req, res) => {
         shopOrder.deliveryOtp = otp
         shopOrder.otpExpires = Date.now() + 5 * 60 * 1000
         await order.save()
-        await sendDeliveryOtpMail(order.user, otp)
-        return res.status(200).json({ message: `Otp sent Successfuly to ${order?.user?.fullName}` })
+        
+        // Send email asynchronously without blocking response
+        sendDeliveryOtpMail(order.user, otp).catch(err => console.log("Email error:", err))
+        
+        console.log(`Delivery OTP for ${order.user.email}: ${otp}`)
+        return res.status(200).json({ message: `Otp sent Successfully to ${order?.user?.fullName}. Check console for OTP: ${otp}` })
     } catch (error) {
+        console.log("Delivery OTP error:", error)
         return res.status(500).json({ message: `delivery otp error ${error}` })
     }
 }
