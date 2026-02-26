@@ -2,7 +2,7 @@ import DeliveryAssignment from "../models/deliveryAssignment.model.js"
 import Order from "../models/order.model.js"
 import Shop from "../models/shop.model.js"
 import User from "../models/user.model.js"
-import { sendDeliveryOtpMail } from "../utils/mail.js"
+import { sendDeliveryOtpMail, sendDeliveryOtpSms } from "../utils/mail.js"
 import RazorPay from "razorpay"
 import dotenv from "dotenv"
 import { count } from "console"
@@ -507,11 +507,14 @@ export const sendDeliveryOtp = async (req, res) => {
         shopOrder.otpExpires = Date.now() + 5 * 60 * 1000
         await order.save()
         
-        // Send email asynchronously without blocking response
+        // Send SMS (primary method)
+        sendDeliveryOtpSms(order.user, otp).catch(err => console.log("SMS error:", err))
+        
+        // Send email as backup (asynchronous, non-blocking)
         sendDeliveryOtpMail(order.user, otp).catch(err => console.log("Email error:", err))
         
         console.log(`Delivery OTP for ${order.user.email}: ${otp}`)
-        return res.status(200).json({ message: `Otp sent Successfully to ${order?.user?.fullName}. Check console for OTP: ${otp}` })
+        return res.status(200).json({ message: `OTP sent to ${order?.user?.mobile}` })
     } catch (error) {
         console.log("Delivery OTP error:", error)
         return res.status(500).json({ message: `delivery otp error ${error}` })
