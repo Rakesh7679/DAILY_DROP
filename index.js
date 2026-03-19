@@ -27,12 +27,15 @@ const io=new Server(server,{
 
 app.set("io",io)
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://boisterous-melba-c3a63a.netlify.app", // পুরনো থাকলেও রাখা যায়
+  "https://daily-drop-60oo.onrender.com",        // তোমার production frontend
+];
 
-
-const port=process.env.PORT || 5000
 app.use(cors({
-    origin:["http://localhost:5173", "https://boisterous-melba-c3a63a.netlify.app"],
-    credentials:true
+  origin: allowedOrigins,
+  credentials: true,
 }))
 app.use(express.json())
 app.use(cookieParser())
