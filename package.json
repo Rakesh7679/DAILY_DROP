@@ -1,0 +1,36 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "cluster": "pm2 start ecosystem.config.json",
+    "cluster:stop": "pm2 stop vingo-backend",
+    "cluster:restart": "pm2 restart vingo-backend",
+    "cluster:logs": "pm2 logs vingo-backend",
+    "cluster:status": "pm2 status"
+  },
+  "author": "Virtual code",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.20.2",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.11",
+    "nodemon": "^3.1.11",
+    "pm2": "^5.4.2",
+    "razorpay": "^2.9.6",
+    "redis": "^4.7.0",
+    "socket.io": "^4.8.1",
+    "twilio": "^5.12.2"
+  }
+}
