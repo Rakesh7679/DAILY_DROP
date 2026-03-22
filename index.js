@@ -16,10 +16,29 @@ import { socketHandler } from "./socket.js"
 
 const app=express()
 const server=http.createServer(app)
+const port = Number(process.env.PORT) || 5000
+
+const defaultOrigins = [
+  "http://localhost:5173",
+  "https://boisterous-melba-c3a63a.netlify.app",
+]
+
+const allowedOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : defaultOrigins
+
+const corsOrigin = (origin, callback) => {
+  // Allow non-browser requests (origin can be undefined in tools/postman/mobile webviews)
+  if (!origin || allowedOrigins.includes(origin)) {
+    callback(null, true)
+    return
+  }
+  callback(new Error("Not allowed by CORS"))
+}
 
 const io=new Server(server,{
    cors:{
-    origin:["http://localhost:5173", "https://boisterous-melba-c3a63a.netlify.app"],
+    origin:allowedOrigins,
     credentials:true,
     methods:['POST','GET']
 }
@@ -27,14 +46,8 @@ const io=new Server(server,{
 
 app.set("io",io)
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://boisterous-melba-c3a63a.netlify.app", // পুরনো থাকলেও রাখা যায়
-  "https://daily-drop-60oo.onrender.com",        // তোমার production frontend
-];
-
 app.use(cors({
-  origin: allowedOrigins,
+  origin: corsOrigin,
   credentials: true,
 }))
 app.use(express.json())
