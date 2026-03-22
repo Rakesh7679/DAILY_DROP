@@ -410,6 +410,51 @@ export const acceptOrder = async (req, res) => {
     }
 }
 
+export const cancelAssignment = async (req, res) => {
+    try {
+        const { assignmentId } = req.params
+        const deliveryBoyId = req.userId
+
+        const assignment = await DeliveryAssignment.findById(assignmentId)
+        if (!assignment) {
+            return res.status(400).json({ message: "assignment not found" })
+        }
+
+        const isBroadcastedForBoy = assignment.status === "brodcasted" && assignment.brodcastedTo.some(
+            (id) => String(id) === String(deliveryBoyId)
+        )
+        const isAssignedToBoy = assignment.status === "assigned" && String(assignment.assignedTo) === String(deliveryBoyId)
+
+        if (!isBroadcastedForBoy && !isAssignedToBoy) {
+            return res.status(403).json({ message: "you are not allowed to cancel this assignment" })
+        }
+
+        // Delivery boy declines this assignment so hide it from future broadcast for this boy.
+        assignment.brodcastedTo = assignment.brodcastedTo.filter((id) => String(id) !== String(deliveryBoyId))
+
+        if (isAssignedToBoy) {
+            assignment.assignedTo = null
+            assignment.status = "brodcasted"
+            assignment.acceptedAt = null
+
+            const order = await Order.findById(assignment.order)
+            if (order) {
+                const shopOrder = order.shopOrders.id(assignment.shopOrderId)
+                if (shopOrder) {
+                    shopOrder.assignedDeliveryBoy = null
+                    await order.save()
+                }
+            }
+        }
+
+        await assignment.save()
+
+        return res.status(200).json({ message: "assignment cancelled" })
+    } catch (error) {
+        return res.status(500).json({ message: `cancel assignment error ${error}` })
+    }
+}
+
 
 
 export const getCurrentOrder = async (req, res) => {
@@ -452,6 +497,7 @@ export const getCurrentOrder = async (req, res) => {
         }
 
         return res.status(200).json({
+            assignmentId: assignment._id,
             _id: assignment.order._id,
             user: assignment.order.user,
             shopOrder,
