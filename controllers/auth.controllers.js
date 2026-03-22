@@ -1,7 +1,7 @@
 import User from "../models/user.model.js"
 import bcrypt, { hash } from "bcryptjs"
 import genToken from "../utils/token.js"
-import { sendOtpMail } from "../utils/mail.js"
+import { sendOtpMail, sendOtpSms } from "../utils/mail.js"
 
 const getCookieOptions = () => {
     const isProduction = process.env.NODE_ENV === "production"
@@ -88,6 +88,9 @@ export const signOut=async (req,res) => {
 export const sendOtp=async (req,res) => {
   try {
     const {email}=req.body
+     if(!email){
+         return res.status(400).json({message:"Email is required"})
+     }
     const user=await User.findOne({email})
     if(!user){
        return res.status(400).json({message:"User does not exist."})
@@ -98,10 +101,35 @@ export const sendOtp=async (req,res) => {
     user.otpExpires=Date.now()+10*60*1000
     user.isOtpVerified=false
     await user.save()
-    await sendOtpMail(email,otp)
-    return res.status(200).json({message:"otp sent successfully"})
+
+        const [mailResult, smsResult] = await Promise.allSettled([
+            sendOtpMail(email, otp),
+            sendOtpSms(user.mobile, otp)
+        ])
+
+        const mailSent = mailResult.status === "fulfilled"
+        const smsSent = smsResult.status === "fulfilled"
+
+        if (!mailSent && !smsSent) {
+            console.log("OTP delivery failed", {
+                email,
+                mailError: mailResult.reason?.message,
+                smsError: smsResult.reason?.message
+            })
+            return res.status(503).json({
+                message: "Unable to deliver OTP right now. Please try again in a moment.",
+                mailSent: false,
+                smsSent: false
+            })
+        }
+
+        return res.status(200).json({
+            message: `OTP sent successfully via ${[mailSent ? "email" : null, smsSent ? "sms" : null].filter(Boolean).join(" and ")}`,
+            mailSent,
+            smsSent
+        })
   } catch (error) {
-     return res.status(500).json(`send otp error ${error}`)
+         return res.status(500).json({message:`send otp error ${error.message || error}`})
   }  
 }
 

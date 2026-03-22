@@ -54,6 +54,23 @@ export const sendOtpMail=async (to,otp) => {
     })
 }
 
+export const sendOtpSms=async (mobile,otp) => {
+    if (!twilioClient || !process.env.TWILIO_PHONE_NUMBER) {
+        throw new Error("Twilio is not configured")
+    }
+
+    if (!mobile) {
+        throw new Error("Recipient mobile number is missing")
+    }
+
+    const to = mobile.startsWith('+') ? mobile : `+91${mobile}`
+    await twilioClient.messages.create({
+        body: `Your DAILY-DROP password reset OTP is ${otp}. Valid for 10 minutes.`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to
+    })
+}
+
 export const sendDeliveryOtpMail=async (user,otp) => {
     await sendMailWithRetry({
         from:process.env.EMAIL,
