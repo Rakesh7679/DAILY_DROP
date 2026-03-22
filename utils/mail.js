@@ -5,14 +5,39 @@ import twilio from "twilio"
 dotenv.config()
 
 const transporter = nodemailer.createTransport({
-  service: "Gmail",
-  port: 465,
-  secure: true,
+    service: "gmail",
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
+    port: 465,
+    secure: true,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   auth: {
     user: process.env.EMAIL,
     pass: process.env.PASS,
   },
 });
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const sendMailWithRetry = async (mailOptions) => {
+    let lastError = null
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            return await transporter.sendMail(mailOptions)
+        } catch (error) {
+            lastError = error
+            if (attempt === 1) {
+                await sleep(500)
+            }
+        }
+    }
+
+    throw lastError
+}
 
 // Twilio client
 let twilioClient = null
@@ -21,16 +46,16 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 }
 
 export const sendOtpMail=async (to,otp) => {
-    await transporter.sendMail({
+    await sendMailWithRetry({
         from:process.env.EMAIL,
         to,
         subject:"Reset Your Password",
-        html:`<p>Your OTP for password reset is <b>${otp}</b>. It expires in 5 minutes.</p>`
+        html:`<p>Your OTP for password reset is <b>${otp}</b>. It expires in 10 minutes.</p>`
     })
 }
 
 export const sendDeliveryOtpMail=async (user,otp) => {
-    await transporter.sendMail({
+    await sendMailWithRetry({
         from:process.env.EMAIL,
         to:user.email,
         subject:"Delivery OTP",

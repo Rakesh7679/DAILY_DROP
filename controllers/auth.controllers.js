@@ -94,7 +94,8 @@ export const sendOtp=async (req,res) => {
     }
     const otp=Math.floor(1000 + Math.random() * 9000).toString()
     user.resetOtp=otp
-    user.otpExpires=Date.now()+5*60*1000
+    // Keep reset OTP valid a bit longer to account for email delivery delays.
+    user.otpExpires=Date.now()+10*60*1000
     user.isOtpVerified=false
     await user.save()
     await sendOtpMail(email,otp)
