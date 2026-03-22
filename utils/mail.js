@@ -5,12 +5,14 @@ import twilio from "twilio"
 dotenv.config()
 
 const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
     service: "gmail",
     pool: true,
     maxConnections: 3,
     maxMessages: 100,
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
+    requireTLS: true,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
