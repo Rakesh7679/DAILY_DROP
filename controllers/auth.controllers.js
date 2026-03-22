@@ -2,6 +2,17 @@ import User from "../models/user.model.js"
 import bcrypt, { hash } from "bcryptjs"
 import genToken from "../utils/token.js"
 import { sendOtpMail } from "../utils/mail.js"
+
+const getCookieOptions = () => {
+    const isProduction = process.env.NODE_ENV === "production"
+    return {
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true
+    }
+}
+
 export const signUp=async (req,res) => {
     try {
         const {fullName,email,password,mobile,role}=req.body
@@ -26,14 +37,10 @@ export const signUp=async (req,res) => {
         })
 
         const token=await genToken(user._id)
-        res.cookie("token",token,{
-            secure:true,
-            sameSite:"none",
-            maxAge:7*24*60*60*1000,
-            httpOnly:true
-        })
+        res.cookie("token",token,getCookieOptions())
   
-        return res.status(201).json(user)
+        const userObj = user.toObject ? user.toObject() : user
+        return res.status(201).json({ ...userObj, authToken: token })
 
     } catch (error) {
         return res.status(500).json(`sign up error ${error}`)
@@ -54,14 +61,10 @@ export const signIn=async (req,res) => {
      }
 
         const token=await genToken(user._id)
-        res.cookie("token",token,{
-            secure:true,
-            sameSite:"none",
-            maxAge:7*24*60*60*1000,
-            httpOnly:true
-        })
+        res.cookie("token",token,getCookieOptions())
   
-        return res.status(200).json(user)
+        const userObj = user.toObject ? user.toObject() : user
+        return res.status(200).json({ ...userObj, authToken: token })
 
     } catch (error) {
         return res.status(500).json(`sign In error ${error}`)
@@ -70,10 +73,11 @@ export const signIn=async (req,res) => {
 
 export const signOut=async (req,res) => {
     try {
-        res.clearCookie("token",{
-            secure:false,
-            sameSite:"strict",
-            httpOnly:true
+        const cookieOptions = getCookieOptions()
+        res.clearCookie("token", {
+            secure: cookieOptions.secure,
+            sameSite: cookieOptions.sameSite,
+            httpOnly: true
         })
         return res.status(200).json({message:"log out successfully"})
     } catch (error) {
@@ -156,14 +160,10 @@ export const googleAuth=async (req,res) => {
         }
 
         const token=await genToken(user._id)
-        res.cookie("token",token,{
-            secure:true,
-            sameSite:"none",
-            maxAge:7*24*60*60*1000,
-            httpOnly:true
-        })
+        res.cookie("token",token,getCookieOptions())
   
-        return res.status(200).json(user)
+        const userObj = user.toObject ? user.toObject() : user
+        return res.status(200).json({ ...userObj, authToken: token })
 
 
     } catch (error) {
