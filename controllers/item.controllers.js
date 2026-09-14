@@ -99,8 +99,8 @@ export const getItemByCity = async (req, res) => {
         const shops = await Shop.find({
             city: { $regex: new RegExp(`^${city}$`, "i") }
         }).populate('items')
-        if (!shops) {
-            return res.status(400).json({ message: "shops not found" })
+        if (!shops || shops.length === 0) {
+            return res.status(200).json([])
         }
         const shopIds=shops.map((shop)=>shop._id)
 
@@ -109,6 +109,42 @@ export const getItemByCity = async (req, res) => {
 
     } catch (error) {
  return res.status(500).json({ message: `get item by city error ${error}` })
+    }
+}
+
+export const getItemByLocation = async (req, res) => {
+    try {
+        const { latitude, longitude, maxDistance } = req.query
+        
+        if (!latitude || !longitude) {
+            return res.status(400).json({ message: "latitude and longitude are required" })
+        }
+
+        const distance = maxDistance ? Number(maxDistance) : 10000
+        
+        const shops = await Shop.find({
+            location: {
+                $near: {
+                    $geometry: {
+                        type: "Point",
+                        coordinates: [Number(longitude), Number(latitude)]
+                    },
+                    $maxDistance: distance
+                }
+            }
+        }).populate('items')
+
+        if (!shops || shops.length === 0) {
+            return res.status(200).json([])
+        }
+
+        const shopIds = shops.map(shop => shop._id)
+        const items = await Item.find({ shop: { $in: shopIds } }).populate("shop", "name image location")
+
+        return res.status(200).json(items)
+    } catch (error) {
+        console.error("Get item by location error:", error)
+        return res.status(500).json({ message: `get item by location error ${error}` })
     }
 }
 
