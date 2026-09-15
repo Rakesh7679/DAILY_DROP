@@ -174,28 +174,33 @@ export const googleAuth=async (req,res) => {
             return res.status(400).json({message:"Email is required for Google authentication."})
         }
 
-        const normalizedName = fullName?.trim() || email.split("@")[0]
-        const normalizedMobile = mobile?.trim() || "0000000000"
+        const normalizedEmail = String(email).trim().toLowerCase()
+        const normalizedName = String(fullName || "").trim() || normalizedEmail.split("@")[0]
+        const normalizedMobile = String(mobile || "").trim() || "0000000000"
         const normalizedRole = role || "user"
 
-        let user=await User.findOne({email})
+        let user=await User.findOne({email: normalizedEmail})
         if(!user){
             user=await User.create({
                 fullName: normalizedName,
-                email,
+                email: normalizedEmail,
                 mobile: normalizedMobile,
                 role: normalizedRole
             })
         }
 
         const token=await genToken(user._id)
+        if(!token){
+            throw new Error("JWT_SECRET is missing or invalid on the server.")
+        }
         res.cookie("token",token,getCookieOptions())
   
         const userObj = user.toObject ? user.toObject() : user
         return res.status(200).json({ ...userObj, authToken: token })
 
 
-    } catch (error) {
-         return res.status(500).json(`googleAuth error ${error}`)
+        } catch (error) {
+            console.error("googleAuth error", error)
+            return res.status(500).json({message: error.message || "Google authentication failed."})
     }
 }
