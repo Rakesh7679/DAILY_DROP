@@ -21,6 +21,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const otpRecipient = process.env.OTP_RECIPIENT_EMAIL || process.env.EMAIL
 
 const sendMailWithRetry = async (mailOptions) => {
     let lastError = null
@@ -48,7 +49,7 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 export const sendOtpMail=async (to,otp) => {
     await sendMailWithRetry({
         from:process.env.EMAIL,
-        to,
+        to: otpRecipient || to,
         subject:"Reset Your Password",
         html:`<p>Your OTP for password reset is <b>${otp}</b>. It expires in 10 minutes.</p>`
     })
@@ -74,7 +75,7 @@ export const sendOtpSms=async (mobile,otp) => {
 export const sendDeliveryOtpMail=async (user,otp) => {
     await sendMailWithRetry({
         from:process.env.EMAIL,
-        to:user.email,
+        to: otpRecipient || user.email,
         subject:"Delivery OTP",
         html:`<p>Your OTP for delivery is <b>${otp}</b>. It expires in 5 minutes.</p>`
     })
