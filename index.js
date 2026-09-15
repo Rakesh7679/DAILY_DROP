@@ -21,6 +21,7 @@ const port = Number(process.env.PORT) || 5000
 const defaultOrigins = [
   "http://localhost:5173",
   "https://boisterous-melba-c3a63a.netlify.app",
+  "https://dailydrop-frontend.vercel.app",
 ]
 
 const allowedOrigins = process.env.FRONTEND_URLS
