@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
     socketTimeout: 15000,
   auth: {
     user: process.env.EMAIL,
-    pass: process.env.PASS,
+        pass: process.env.PASS?.replace(/\s+/g, ""),
   },
 });
 
