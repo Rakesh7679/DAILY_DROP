@@ -6,16 +6,14 @@ dotenv.config()
 
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    service: "gmail",
     pool: true,
     maxConnections: 3,
     maxMessages: 100,
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    port: 465,
+    secure: true,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
   auth: {
     user: process.env.EMAIL,
         pass: process.env.PASS?.replace(/\s+/g, ""),
@@ -61,7 +59,7 @@ export const sendOtpSms=async (mobile,otp) => {
         throw new Error("Twilio is not configured")
     }
 
-    if (!mobile) {
+    if (!mobile || !/^\+?[1-9]\d{9,14}$/.test(String(mobile).trim())) {
         throw new Error("Recipient mobile number is missing")
     }
 
