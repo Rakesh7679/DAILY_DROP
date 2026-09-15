@@ -23,6 +23,32 @@ const transporter = nodemailer.createTransport({
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const otpRecipient = process.env.OTP_RECIPIENT_EMAIL || process.env.EMAIL
 
+const sendMail = async (mailOptions) => {
+    if (process.env.RESEND_API_KEY) {
+        const response = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+                to: [mailOptions.to],
+                subject: mailOptions.subject,
+                html: mailOptions.html
+            })
+        })
+
+        if (!response.ok) {
+            const error = await response.text()
+            throw new Error(`Resend error ${response.status}: ${error}`)
+        }
+        return response.json()
+    }
+
+    return sendMailWithRetry(mailOptions)
+}
+
 const sendMailWithRetry = async (mailOptions) => {
     let lastError = null
 
@@ -47,7 +73,7 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 }
 
 export const sendOtpMail=async (to,otp) => {
-    await sendMailWithRetry({
+    await sendMail({
         from:process.env.EMAIL,
         to: otpRecipient || to,
         subject:"Reset Your Password",
@@ -73,7 +99,7 @@ export const sendOtpSms=async (mobile,otp) => {
 }
 
 export const sendDeliveryOtpMail=async (user,otp) => {
-    await sendMailWithRetry({
+    await sendMail({
         from:process.env.EMAIL,
         to: otpRecipient || user.email,
         subject:"Delivery OTP",
