@@ -536,14 +536,27 @@ export const sendDeliveryOtp = async (req, res) => {
         shopOrder.otpExpires = Date.now() + 5 * 60 * 1000
         await order.save()
         
-        // Send SMS (primary method)
-        sendDeliveryOtpSms(order.user, otp).catch(err => console.log("SMS error:", err))
-        
-        // Send email as backup (asynchronous, non-blocking)
-        sendDeliveryOtpMail(order.user, otp).catch(err => console.log("Email error:", err))
-        
-        console.log(`Delivery OTP for ${order.user.email}: ${otp}`)
-        return res.status(200).json({ message: `OTP sent to ${order?.user?.mobile}` })
+        const [emailResult, smsResult] = await Promise.allSettled([
+            sendDeliveryOtpMail(order.user, otp),
+            sendDeliveryOtpSms(order.user, otp)
+        ])
+
+        if (emailResult.status === "rejected") {
+            console.log("Delivery OTP email error:", emailResult.reason?.message || emailResult.reason)
+        }
+        if (smsResult.status === "rejected") {
+            console.log("Delivery OTP SMS error:", smsResult.reason?.message || smsResult.reason)
+        }
+
+        if (emailResult.status !== "fulfilled" && smsResult.status !== "fulfilled") {
+            return res.status(503).json({ message: "Unable to deliver delivery OTP. Please try again." })
+        }
+
+        const channels = [
+            emailResult.status === "fulfilled" ? "email" : null,
+            smsResult.status === "fulfilled" ? "SMS" : null
+        ].filter(Boolean).join(" and ")
+        return res.status(200).json({ message: `OTP sent via ${channels}` })
     } catch (error) {
         console.log("Delivery OTP error:", error)
         return res.status(500).json({ message: `delivery otp error ${error}` })
