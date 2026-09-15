@@ -24,9 +24,10 @@ const defaultOrigins = [
   "https://dailydrop-frontend.vercel.app",
 ]
 
-const allowedOrigins = process.env.FRONTEND_URLS
+const configuredOrigins = process.env.FRONTEND_URLS
   ? process.env.FRONTEND_URLS.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : defaultOrigins
+  : []
+const allowedOrigins = [...new Set([...defaultOrigins, ...configuredOrigins])]
 
 const corsOrigin = (origin, callback) => {
   // Allow non-browser requests (origin can be undefined in tools/postman/mobile webviews)
